@@ -1,0 +1,49 @@
+specVersion: v0.1.0
+package:
+  name: pyth_oracle_price
+  version: v0.4.0
+  image: ./helix.png
+
+imports:
+  injective: https://spkg.io/streamingfast/injective-common-v0.2.2.spkg
+  injective_pyth: https://spkg.io/streamingfast/pyth-oracle-price-v0.4.0.spkg
+
+binaries:
+  default:
+    type: wasm/rust-v1
+    file: ./target/wasm32-unknown-unknown/release/substreams.wasm
+
+protobuf:
+  files:
+    - set_oracle_price.proto
+  importPaths:
+    - ./proto/sf/substreams/injective/oracle/v1
+
+  excludePaths:
+    - sf/substreams/index
+    - sf/substreams/rpc
+    - sf/substreams/sink
+    - sf/substreams/v1
+    - google
+    - amino
+    - gogoproto
+    - cosmos/msg/v1
+
+modules:
+  - name: map_claim_rewards
+    kind: map
+    initialBlock: 13297
+    inputs:
+     - map: injective:filtered_events
+     - store: injective_pyth:store_set_oracle_prices
+    output :
+      type: proto:sf.substreams.injective.oracle.v1.SetOraclePrice
+
+params:
+  injective:filtered_events: "type:"
+
+
+network: injective-mainnet
+
+
+

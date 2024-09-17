@@ -1,0 +1,9 @@
+{
+  "generator": "injective-minimal",
+  "state": {
+    "name": "pyth_oracle_price",
+    "chainName": "injective-mainnet",
+    "initialBlock": 30749339,
+    "initialBlockSet": true
+  }
+}
