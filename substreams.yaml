@@ -3,6 +3,7 @@ package:
   name: pyth_oracle_price
   version: v0.4.0
   image: ./helix.png
+  url: "https://github.com/streamingfast/sps-helix-dashboard"
 
 imports:
   injective: https://spkg.io/streamingfast/injective-common-v0.2.2.spkg
@@ -15,9 +16,9 @@ binaries:
 
 protobuf:
   files:
-    - set_oracle_price.proto
+    - helix.proto
   importPaths:
-    - ./proto/sf/substreams/injective/oracle/v1
+    - ./proto/sf/substreams/injective/helix/v1
 
   excludePaths:
     - sf/substreams/index
@@ -30,17 +31,34 @@ protobuf:
     - cosmos/msg/v1
 
 modules:
-  - name: map_claim_rewards
+  - name: map_contract_events
     kind: map
-    initialBlock: 13297
+    initialBlock: 55393376
     inputs:
+     - params: string
      - map: injective:filtered_events
+    output :
+      type: proto:sf.substreams.injective.helix.v1.Events
+  - name: store_round_info
+    kind: store
+    initialBlock: 55393376
+    inputs:
+      - map: map_contract_events
+    updatePolicy: set
+    valueType: string
+  - name: map_filtered_trades
+    kind: map
+    initialBlock: 55393376
+    inputs:
+     - map: map_contract_events
+     - store: store_round_info
      - store: injective_pyth:store_set_oracle_prices
     output :
-      type: proto:sf.substreams.injective.oracle.v1.SetOraclePrice
+      type: proto:sf.substreams.injective.helix.v1.Events
 
 params:
-  injective:filtered_events: "type:"
+  map_contract_events: "inj1xufs3ggc9styawwhfp23q9jz7kxmm7tek8yflk"
+  injective:filtered_events: "type:wasm-create-campaign || type:wasm-update-campaign || type:wasm-create-round || type:wasm-update-round || type:injective.exchange.v1beta1.EventBatchSpotExecution"
 
 
 network: injective-mainnet

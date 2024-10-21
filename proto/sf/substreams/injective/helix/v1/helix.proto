@@ -1,0 +1,68 @@
+syntax = "proto3";
+
+package sf.substreams.injective.helix.v1;
+import "google/protobuf/timestamp.proto";
+
+message Events {
+  repeated Event events = 1;
+}
+
+message Event {
+  oneof item{
+    BatchSpotExecution event_batch_spot_execution = 1;
+    CreateCampaign create_campaign = 2;
+    CreateRound create_round = 3;
+    UpdateCampaign update_campaign = 4;
+    UpdateRound update_round = 5;
+  }
+}
+
+
+//Event type: `wasm-incentives-update-campaign`
+message UpdateCampaign {
+  string market_id = 1;
+  float new_rewards = 2;
+  string round = 3;
+}
+
+//Event type: `wasm-incentives-update-round`
+message UpdateRound {
+  string id = 1;
+//  google.protobuf.Timestamp start_date = 2;
+//  google.protobuf.Timestamp end_date = 3;
+  string start_date = 2;
+  string end_date = 3;
+}
+
+
+//Event type: `wasm-incentives-create-campaign`
+message CreateCampaign {
+  string id = 1;
+  string market_id = 2;
+  string subaccount_suffix = 3;
+  string round = 5;
+  int64 rewards =4;
+}
+
+//Event type: `wasm-incentives-create-round`
+message CreateRound {
+  string id = 1;
+//  google.protobuf.Timestamp start_date = 2;
+//  google.protobuf.Timestamp end_date = 3;
+  string start_date = 2;
+  string end_date = 3;
+}
+
+//Event type: `injective.exchange.v1beta1.EventBatchSpotExecution`
+message BatchSpotExecution {
+  string market_id = 1;
+  repeated Trade trades = 2;
+}
+
+message Trade {
+  int64 quantity = 1;
+  int64 price = 2;
+  string subaccount_id = 4;
+  //Field calculated using INJ/USD oracle price
+  optional int64 volume_usd = 3;
+}
