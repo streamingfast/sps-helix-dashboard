@@ -1,6 +1,6 @@
 specVersion: v0.1.0
 package:
-  name: pyth_oracle_price
+  name: helix_dashboard
   version: v0.4.0
   image: ./helix.png
   url: "https://github.com/streamingfast/sps-helix-dashboard"
@@ -58,7 +58,7 @@ modules:
 
 params:
   map_contract_events: "inj1xufs3ggc9styawwhfp23q9jz7kxmm7tek8yflk"
-  injective:filtered_events: "type:wasm-create-campaign || type:wasm-update-campaign || type:wasm-create-round || type:wasm-update-round || type:injective.exchange.v1beta1.EventBatchSpotExecution"
+  injective:filtered_events: "type:wasm-incentives-create-campaign || type:wasm-incentives-update-campaign || type:wasm-incentives-create-round || type:wasm-incentives-update-round || type:injective.exchange.v1beta1.EventBatchSpotExecution"
 
 
 network: injective-mainnet

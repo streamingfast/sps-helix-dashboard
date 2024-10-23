@@ -1,0 +1,19 @@
+specVersion: 1.0.0
+description: pyth-oracle-price Substreams-powered-Subgraph
+indexerHints:
+  prune: auto
+schema:
+  file: ./schema.graphql
+dataSources:
+  - kind: substreams
+    name: pyth_oracle_price
+    network: injective-mainnet
+    source:
+      package:
+        moduleName: map_filtered_trades
+        file: ../pyth-oracle-price-v0.4.0.spkg
+    mapping:
+      apiVersion: 0.0.7
+      kind: substreams/graph-entities
+      file: ./src/mappings.ts
+      handler: handleTriggers

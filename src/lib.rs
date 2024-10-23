@@ -9,9 +9,10 @@ use pb::sf::substreams::injective::oracle::v1::{SetOraclePrice};
 use substreams::errors::Error;
 use substreams::prelude::*;
 use substreams::store::{
-    StoreGetProto, StoreAddInt64, StoreGetArray
+    StoreGetProto
 };
 use serde::{Deserialize};
+use substreams::log;
 
 #[substreams::handlers::map]
 pub fn map_contract_events(params: String, events: EventList) -> Result<HEvents, Error> {
@@ -19,6 +20,7 @@ pub fn map_contract_events(params: String, events: EventList) -> Result<HEvents,
 
     events.events.into_iter().for_each(|event: Event| {
         if let Some(event_data) = event.event {
+            log::info!("event_type {:?}", event_data.r#type.as_str());
             match event_data.r#type.as_str() {
                 "wasm-incentives-create-round" => {
                     if let Some(_) = event_data.attributes.iter().find(|attr| {
@@ -33,7 +35,7 @@ pub fn map_contract_events(params: String, events: EventList) -> Result<HEvents,
                                  _ => {}
                              }
                          });
-
+                        
                         let create_round_event = HEvent{
                             item: Some(Item::CreateRound(create_round))
                         };
@@ -54,7 +56,10 @@ pub fn map_contract_events(params: String, events: EventList) -> Result<HEvents,
                                 "id" => create_campaign.id = attr.value,
                                 "market_id" => create_campaign.market_id = attr.value,
                                 "subaccount_suffix" => create_campaign.subaccount_suffix = attr.value,
-                                "rewards" => create_campaign.rewards = attr.value.parse().unwrap(),
+                                "rewards" => {
+                                    log::info!("{}", attr.value);
+                                    create_campaign.rewards = attr.value.parse().unwrap()
+                                },
                                 _ => {}
                             }
                         });
@@ -70,38 +75,48 @@ pub fn map_contract_events(params: String, events: EventList) -> Result<HEvents,
 
                 "injective.exchange.v1beta1.EventBatchSpotExecution" => {
                     let attributes = event_data.attributes;
-                    if let Some(_) = attributes.iter().find(|&attr| {
-                        attr.key == "_contract_address" && attr.value == params
-                    }) {
-                        let mut batch_spot_execution = BatchSpotExecution::default();
-                        let _ = attributes.into_iter().for_each(|attr| {
-                            match attr.key.as_str() {
-                                "market_id" => batch_spot_execution.market_id = attr.value,
-                                "trades" => {
-                                    let s_trades :Vec<STrade>= serde_json::from_str(&attr.value).unwrap();
-                                    let mut trades: Vec<Trade> = Vec::new();
-                                    
-                                    s_trades.into_iter().for_each(|s_trade| {
-                                        let trade = Trade{
-                                            quantity: s_trade.quantity.parse().unwrap(),
-                                            price: s_trade.price.parse().unwrap(),
-                                            subaccount_id: s_trade.subaccount_id,
-                                            volume_usd: None,
-                                        };
+                    let mut batch_spot = BatchSpotExecution::default();
 
-                                        trades.push(trade);
-                                    });
+                    attributes.into_iter().for_each(|attr| {
+                        match attr.key.as_str() {
+                            "market_id" =>{
+                                if attr.value.is_empty() {
+                                    return;
+                                }
+                                batch_spot.market_id = attr.value},
+                            "trades" => {
+                                let s_trades: Vec<STrade> = serde_json::from_str(&attr.value).unwrap_or_default();
 
-                                    batch_spot_execution.trades = trades;
-                                },
-                                _ => {}
+                                let trades: Vec<Trade> = s_trades
+                                    .into_iter()
+                                    .map(|s_trade| Trade {
+                                        quantity: s_trade.quantity.parse().unwrap_or_default(),
+                                        price: s_trade.price.parse().unwrap_or_default(),
+                                        subaccount_id: s_trade.subaccount_id,
+                                        volume_usd: None,
+                                    })
+                                    .collect();
+
+                                if trades.is_empty() {
+                                    return;
+                                }
+
+                                batch_spot.trades = trades;
                             }
-                        });
-                    }
+                            _ => {}
+                        }
+                    });
+
+                    let batch_spot_execution_event = HEvent {
+                        item: Some(Item::EventBatchSpotExecution(batch_spot.clone())),
+                    };
+
+                    hevents.events.push(batch_spot_execution_event);
                 },
 
                 "wasm-incentives-update-round" => {
-                    if let Some(_) = event_data.attributes.iter().find(|attr| {
+                    let attributes = event_data.attributes;
+                    if let Some(_) = attributes.iter().find(|attr| {
                         attr.key == "_contract_address" && attr.value == params
                     }) {
                         let update_round = UpdateRound::default();
@@ -109,10 +124,19 @@ pub fn map_contract_events(params: String, events: EventList) -> Result<HEvents,
                 },
 
                 "wasm-incentives-update-campaign" => {
-                    if let Some(_) = event_data.attributes.iter().find(|attr| {
+                    let attributes = event_data.attributes;
+                    if let Some(_) = attributes.iter().find(|attr| {
                         attr.key == "_contract_address" && attr.value == params
                     }) {
-                       let update_campaign = UpdateCampaign::default();
+                        let mut update_campaign = UpdateCampaign::default();
+                        let _ = attributes.into_iter().for_each(|attr| {
+                            match attr.key.as_str() {
+                                "market_id" => update_campaign.market_id = attr.value,
+                                "round" => update_campaign.round = attr.value,
+                                "rewards" => update_campaign.new_rewards = attr.value.parse().unwrap(),
+                                _ => {}
+                            }
+                        });
                     }
 
                 },
@@ -187,7 +211,7 @@ pub fn map_filtered_trades(events: HEvents, store_round_info: StoreGetString, st
                                     let inj_usd_price = inj_usd_set_price.price_state.unwrap().price;
 
                                     let mut update_trade = trade.clone();
-                                    let volume: f64 = (trade.quantity as f64) * (trade.price as f64);;
+                                    let volume: f64 = (trade.quantity as f64) * (trade.price as f64);
                                     update_trade.volume_usd = Some((volume * inj_usd_price) as i64);
 
                                     update_trades.push(update_trade);
@@ -196,11 +220,16 @@ pub fn map_filtered_trades(events: HEvents, store_round_info: StoreGetString, st
                         }
                     });
 
-                    let mut updated_batch_spot_execution = BatchSpotExecution{
+                    let updated_batch_spot_execution = BatchSpotExecution{
                         market_id: batch_spot_execution.market_id.clone(),
                         trades: update_trades
                     };
 
+                    let filtered_event = HEvent{
+                        item: Some(Item::EventBatchSpotExecution(updated_batch_spot_execution))
+                    };
+
+                    filtered_events.events.push(filtered_event);
                 },
 
                 _ => {}

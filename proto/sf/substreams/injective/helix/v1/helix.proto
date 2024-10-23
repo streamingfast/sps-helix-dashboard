@@ -40,8 +40,9 @@ message CreateCampaign {
   string id = 1;
   string market_id = 2;
   string subaccount_suffix = 3;
+  string rewards = 4;
   string round = 5;
-  int64 rewards =4;
+  string rewards_usd = 6;
 }
 
 //Event type: `wasm-incentives-create-round`
@@ -60,8 +61,8 @@ message BatchSpotExecution {
 }
 
 message Trade {
-  int64 quantity = 1;
-  int64 price = 2;
+  float quantity = 1;
+  float price = 2;
   string subaccount_id = 4;
   //Field calculated using INJ/USD oracle price
   optional int64 volume_usd = 3;

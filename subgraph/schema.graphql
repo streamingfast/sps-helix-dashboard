@@ -1,0 +1,13 @@
+type Round @entity {
+    id: ID!
+    campaigns: [Campaign!]!
+    total_volume : BigDecimal!
+}
+
+type Campaign @entity {
+    id: ID!
+    campaign_id: BigInt!
+    rewards: BigInt!
+    total_volume : BigDecimal!
+    round: Round!
+}

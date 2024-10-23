@@ -62,10 +62,12 @@ pub struct CreateCampaign {
     pub market_id: ::prost::alloc::string::String,
     #[prost(string, tag="3")]
     pub subaccount_suffix: ::prost::alloc::string::String,
+    #[prost(string, tag="4")]
+    pub rewards: ::prost::alloc::string::String,
     #[prost(string, tag="5")]
     pub round: ::prost::alloc::string::String,
-    #[prost(int64, tag="4")]
-    pub rewards: i64,
+    #[prost(string, tag="6")]
+    pub rewards_usd: ::prost::alloc::string::String,
 }
 /// Event type: `wasm-incentives-create-round`
 #[allow(clippy::derive_partial_eq_without_eq)]
@@ -92,10 +94,10 @@ pub struct BatchSpotExecution {
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct Trade {
-    #[prost(int64, tag="1")]
-    pub quantity: i64,
-    #[prost(int64, tag="2")]
-    pub price: i64,
+    #[prost(float, tag="1")]
+    pub quantity: f32,
+    #[prost(float, tag="2")]
+    pub price: f32,
     #[prost(string, tag="4")]
     pub subaccount_id: ::prost::alloc::string::String,
     /// Field calculated using INJ/USD oracle price
